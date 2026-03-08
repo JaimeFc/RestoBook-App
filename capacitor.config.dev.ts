@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   server: {
     // Apunta al servidor de desarrollo de Vite
     // Cambia esta IP por la de tu máquina (usa: ipconfig getifaddr en0)
-    url: 'http://192.168.1.6:3000',
+    url: 'http://10.0.2.2:3000',
     cleartext: true,
   },
   plugins: {

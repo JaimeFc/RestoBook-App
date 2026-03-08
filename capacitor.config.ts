@@ -22,7 +22,6 @@ const config: CapacitorConfig = {
       overlaysWebView: true,
     },
     LiveUpdate: {
-      // URL de tu servidor de actualizaciones (configura según tu backend)
       appId: "com.example.appkickoff",
       autoDeleteBundles: true,
       enabled: true,
@@ -36,7 +35,11 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true,
     captureInput: true,
-    webContentsDebuggingEnabled: true, // Cambiar a false en producción
+    webContentsDebuggingEnabled: true,
+    // AÑADIMOS ESTO PARA EVITAR ERRORES DE COMPILACIÓN EN RELEASE/DEBUG
+    buildOptions: {
+      releaseType: 'APK',
+    }
   },
   ios: {
     contentInset: "always",
