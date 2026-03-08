@@ -16,12 +16,18 @@ const Home: React.FC = () => {
 
   const fetchWeather = async () => {
     try {
-      // 10.0.2.2 es vital para el emulador de Android
-      const response = await axios.get("http://10.0.2.2:3000/api/weather?city=Quito");
+      // CORRECCIÓN: Añadimos el Header 'x-resto-token' para saltar el middleware del backend
+      const response = await axios.get("http://10.0.2.2:3000/api/weather?city=Quito", {
+        headers: {
+          'x-resto-token': 'RestoBook2026' // <--- DEBE coincidir con el .env de tu Backend
+        }
+      });
+      
       console.log("Datos del clima recibidos:", response.data);
       setWeather(response.data);
     } catch (error) {
       console.error("Error al obtener clima:", error);
+      // Si hay error, podrías setear un estado de error para no mostrar el spinner infinito
     }
   };
 
@@ -56,7 +62,7 @@ const Home: React.FC = () => {
             </div>
           )}
 
-          {/* CARD DE CLIMA - MEJORADA */}
+          {/* CARD DE CLIMA */}
           {weather ? (
             <IonCard style={{ 
               background: 'linear-gradient(135deg, #8b4513 0%, #5d2e0a 100%)', 
@@ -87,6 +93,7 @@ const Home: React.FC = () => {
             </IonCard>
           ) : (
              <div style={{ textAlign: 'center', padding: '10px' }}>
+               <IonSpinner name="dots" color="primary" />
                <p style={{ color: '#8b4513' }}>Cargando datos del tiempo...</p>
              </div>
           )}
