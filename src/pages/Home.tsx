@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonCard, IonCardHeader, IonCardTitle, IonCardContent,
-  IonList, IonItem, IonLabel, IonSpinner, IonRefresher,
-  IonRefresherContent, IonText
+  IonCard, IonCardContent, IonSpinner, IonRefresher,
+  IonRefresherContent, IonText, IonIcon, IonAvatar, IonButtons,
+  IonList, IonItem, IonLabel, IonBadge
 } from "@ionic/react";
+import { calendarOutline, mapOutline, personOutline, peopleOutline } from "ionicons/icons";
 import { RefresherEventDetail } from "@ionic/core";
 import { useProfile, useRefreshData } from "../hooks/useRealtimeData";
 import axios from "axios";
@@ -13,116 +14,118 @@ const Home: React.FC = () => {
   const { data: user, isLoading } = useProfile();
   const { refreshProfile } = useRefreshData();
   const [weather, setWeather] = useState<any>(null);
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [loadingRes, setLoadingRes] = useState(true);
 
   const fetchWeather = async () => {
     try {
-      // CORRECCIÓN: Añadimos el Header 'x-resto-token' para saltar el middleware del backend
       const response = await axios.get("http://10.0.2.2:3000/api/weather?city=Quito", {
-        headers: {
-          'x-resto-token': 'RestoBook2026' // <--- DEBE coincidir con el .env de tu Backend
-        }
+        headers: { 'x-resto-token': 'RestoBook2026' }
       });
-      
-      console.log("Datos del clima recibidos:", response.data);
       setWeather(response.data);
-    } catch (error) {
-      console.error("Error al obtener clima:", error);
-      // Si hay error, podrías setear un estado de error para no mostrar el spinner infinito
-    }
+    } catch (error) { console.error(error); }
+  };
+
+  const fetchReservations = async () => {
+    setLoadingRes(true);
+    try {
+      const response = await axios.get("http://10.0.2.2:3000/api/reservations/today", {
+        headers: { 'x-resto-token': 'RestoBook2026' }
+      });
+      setReservations(response.data);
+    } catch (error) { console.error(error); }
+    finally { setLoadingRes(false); }
   };
 
   useEffect(() => {
     fetchWeather();
+    fetchReservations();
   }, []);
 
   const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
-    await Promise.all([refreshProfile(), fetchWeather()]);
+    await Promise.all([refreshProfile(), fetchWeather(), fetchReservations()]);
     event.detail.complete();
   };
 
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar>
-          <IonTitle>RestoBook - Inicio</IonTitle>
+          <IonTitle style={{ fontWeight: 'bold', color: '#8b4513' }}>RestoBook Gourmet</IonTitle>
+          <IonButtons slot="end">
+             <div style={{ display: 'flex', alignItems: 'center', paddingRight: '15px' }}>
+                <IonAvatar style={{ width: '32px', height: '32px', marginRight: '8px' }}>
+                  <img src="https://ionicframework.com/docs/img/demos/avatar.svg" alt="admin" />
+                </IonAvatar>
+                <IonText color="dark"><small>admin</small></IonText>
+             </div>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
+
       <IonContent fullscreen>
         <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent pullingText="Desliza para actualizar" refreshingSpinner="crescent" />
+          <IonRefresherContent pullingText="Actualizar" refreshingSpinner="crescent" />
         </IonRefresher>
 
-        <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
-          
-          {/* SALUDO */}
-          {user && !isLoading && (
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontWeight: 'bold' }}>Hola, {user.name || user.username} 👋</h2>
-              <p style={{ color: "var(--ion-color-medium)" }}>Bienvenido a tu espacio personal</p>
-            </div>
-          )}
-
-          {/* CARD DE CLIMA */}
-          {weather ? (
-            <IonCard style={{ 
-              background: 'linear-gradient(135deg, #8b4513 0%, #5d2e0a 100%)', 
-              borderRadius: '16px',
-              margin: '0 0 20px 0',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-            }}>
-              <IonCardContent style={{ padding: '20px', color: 'white', textAlign: 'center' }}>
-                <IonText color="light">
-                  <p style={{ fontSize: '1.1rem', margin: 0, opacity: 0.9 }}>Clima en {weather.ciudad}</p>
+        <div style={{ padding: "16px" }}>
+          {/* CLIMA */}
+          {weather && (
+            <IonCard style={{ background: '#ffffff', borderRadius: '20px', margin: '0 0 20px 0', boxShadow: '0 2px 15px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' }}>
+              <IonCardContent style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={weather.icono?.startsWith('http') ? weather.icono : `https://openweathermap.org/img/wn/${weather.icono}@2x.png`} alt="clima" style={{ width: '45px', marginRight: '10px' }} />
+                <IonText color="dark">
+                  <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: '600' }}>{Math.round(weather.temperatura)}°C, {weather.descripcion}</h2>
                 </IonText>
-                
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '10px 0' }}>
-                  <img 
-                    src={weather.icono?.startsWith('http') ? weather.icono : `https://openweathermap.org/img/wn/${weather.icono}@2x.png`} 
-                    alt="clima" 
-                    style={{ width: '80px', filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,0.2))' }} 
-                  />
-                  <span style={{ fontSize: '3.5rem', fontWeight: 'bold', marginLeft: '10px' }}>
-                    {Math.round(weather.temperatura)}°C
-                  </span>
-                </div>
-                
-                <p style={{ textTransform: 'capitalize', fontSize: '1.3rem', margin: 0, fontWeight: '500' }}>
-                  {weather.descripcion}
-                </p>
               </IonCardContent>
             </IonCard>
-          ) : (
-             <div style={{ textAlign: 'center', padding: '10px' }}>
-               <IonSpinner name="dots" color="primary" />
-               <p style={{ color: '#8b4513' }}>Cargando datos del tiempo...</p>
-             </div>
           )}
 
-          {/* INFORMACIÓN PERSONAL */}
           {user && !isLoading && (
-            <IonCard style={{ margin: "0", borderRadius: '16px' }}>
-              <IonCardHeader>
-                <IonCardTitle style={{ fontSize: '1.2rem' }}>Información Personal</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList lines="none">
-                  <IonItem><IonLabel><h3>Usuario</h3><p>{user.username}</p></IonLabel></IonItem>
-                  <IonItem><IonLabel><h3>Email</h3><p>{user.email}</p></IonLabel></IonItem>
-                  <IonItem><IonLabel><h3>Rol</h3><p style={{ textTransform: "capitalize" }}>{user.role}</p></IonLabel></IonItem>
-                </IonList>
-              </IonCardContent>
-            </IonCard>
-          )}
-
-          {isLoading && (
-            <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
-              <IonSpinner name="crescent" />
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <h1 style={{ fontWeight: '700', fontSize: '2rem', color: '#5d2e0a', margin: '0' }}>Hola, {user.username} 👋</h1>
             </div>
           )}
+
+          {/* GRID DE BOTONES - ACTUALIZADO CON RUTAS TABS */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+            <IonCard routerLink="/tabs/reservar" style={{ background: 'linear-gradient(135deg, #a0522d 0%, #8b4513 100%)', margin: 0, borderRadius: '18px', textAlign: 'center', height: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+              <IonIcon icon={calendarOutline} style={{ fontSize: '32px', color: 'white' }} />
+              <IonText style={{ color: 'white', fontWeight: '500' }}>Reservar Mesa</IonText>
+            </IonCard>
+
+            <IonCard routerLink="/tabs/mapa" style={{ background: 'linear-gradient(135deg, #8b7355 0%, #705a3e 100%)', margin: 0, borderRadius: '18px', textAlign: 'center', height: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+              <IonIcon icon={mapOutline} style={{ fontSize: '32px', color: 'white' }} />
+              <IonText style={{ color: 'white', fontWeight: '500' }}>Mapa de Mesas</IonText>
+            </IonCard>
+
+            <IonCard routerLink="/tabs/perfil" style={{ background: 'linear-gradient(135deg, #8b7355 0%, #705a3e 100%)', margin: 0, borderRadius: '18px', textAlign: 'center', height: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+              <IonIcon icon={personOutline} style={{ fontSize: '32px', color: 'white' }} />
+              <IonText style={{ color: 'white', fontWeight: '500' }}>Mi Cuenta</IonText>
+            </IonCard>
+
+            <IonCard routerLink="/tabs/usuarios" style={{ background: 'linear-gradient(135deg, #a0522d 0%, #8b4513 100%)', margin: 0, borderRadius: '18px', textAlign: 'center', height: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+              <IonIcon icon={peopleOutline} style={{ fontSize: '32px', color: 'white' }} />
+              <IonText style={{ color: 'white', fontWeight: '500' }}>Usuarios</IonText>
+            </IonCard>
+          </div>
+
+          {/* LISTA DE RESERVAS ABAJO */}
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '16px', boxShadow: '0 2px 15px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' }}>
+            <h3 style={{ margin: '0 0 15px 0', fontWeight: 'bold', fontSize: '1.2rem', color: '#333' }}>Reservas para Hoy</h3>
+            {loadingRes ? <div style={{ textAlign: 'center' }}><IonSpinner name="crescent" /></div> : 
+              reservations.length > 0 ? (
+                <IonList lines="none">
+                  {reservations.map((res: any, i: number) => (
+                    <IonItem key={i}><IonLabel><h2>{res.customerName}</h2><p>Mesa {res.tableNumber}</p></IonLabel></IonItem>
+                  ))}
+                </IonList>
+              ) : <p style={{ textAlign: 'center', color: '#888' }}>No hay reservas para hoy.</p>
+            }
+          </div>
         </div>
       </IonContent>
     </IonPage>
   );
 };
-
 export default Home;
